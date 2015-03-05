@@ -1,0 +1,4 @@
+#create a maven pom file
+lein pom
+#use Maven eclipse:eclipse goal to generate Eclipse configuration file
+mvn eclipse:eclipse
