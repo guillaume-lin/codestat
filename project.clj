@@ -7,4 +7,6 @@
 		 [enlive "1.1.5"]	]
   :main ^:skip-aot codestat.core
   :target-path "target/%s"
+  :plugins [[lein-ring "0.9.3"]]
+  :ring {:handler codestat.core/handler}
   :profiles {:uberjar {:aot :all}})
