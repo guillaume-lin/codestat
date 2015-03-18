@@ -1,0 +1,7 @@
+1. package into war, and deploy to tomcat
+2. implement post method
+3. setup apache log analysis system
+5. collect commit log from svn
+6. collect commit log from git
+7. do data mining from the version control data
+8. represent the result into web view / execl file
