@@ -12,7 +12,7 @@
 	(binding [*in* body]
 	(loop [input1 (read-line)]
 		
-		(if input (recur (read-line)) (str input)))))
+		(if input1 (recur (read-line)) (str input1)))))
 
 
 (defn handler
