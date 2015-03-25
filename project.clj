@@ -8,5 +8,5 @@
   :main ^:skip-aot codestat.core
   :target-path "target/%s"
   :plugins [[lein-ring "0.9.3"]]
-  :ring {:handler codestat.core/handler}
+  :ring {:handler codestat.web/handler}
   :profiles {:uberjar {:aot :all}})
