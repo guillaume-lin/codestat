@@ -6,5 +6,4 @@
 (defn run-cmd
   "run cmd in shell"
   [cmd & args]
-  ((sh cmd)
-  (println args)))
+  (println (:out (sh cmd))))

@@ -1,6 +1,7 @@
 (ns codestat.core
   (:gen-class))
 (use 'clj-webdriver.taxi)
+(use 'codestat.util)
 (defn test-selenium[]
  (do
    ;; Start up a browser
@@ -14,7 +15,7 @@
 (defn -main
   "I don't do a whole lot ... yet."
   [& args]
-  (println "Hello, World!")
-  (test-selenium))
+  (println args)
+  (run-cmd "cmd.exe" "dir"))
 
 
