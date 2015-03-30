@@ -7,7 +7,9 @@
 (defn get-body
 	"get the body"
 	[body]
-	(line-seq (reader body)))
+	(let [ret (line-seq (reader body))]
+		(spit "/tmp/req" ret)
+		ret))
 
 
 (defn handler
