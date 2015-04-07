@@ -1,3 +1,7 @@
+#
+# use mysql source command to load this file.
+# source doc/log.sql
+#
 drop table gitlog;
 create table gitlog(id int primary key auto_increment,
                name varchar(20), commit_date timestamp , revision varchar(40), 
