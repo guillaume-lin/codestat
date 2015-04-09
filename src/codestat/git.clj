@@ -7,8 +7,6 @@
 
 (def ^:dynamic *workspace* "/home/jenkins/workspace")
 
-(defrecord gitlog-rec
-  [])
 
 ;;;
 (defn git-pull
@@ -18,12 +16,12 @@
 ;;; 
 ;;; return a line-seq of git logs
 ;;;
-(defn git-log-1
+(defn git-log
   [dir]
   (line-seq (java.io.BufferedReader. 
               (java.io.StringReader. 
                 (:out (with-sh-dir dir
-                        (sh "git" "log" "--numstat" "--format='Author:%an%nDate:%at%nCommit:%H%nMessage:%s'")))))))
+                        (sh "git" "log" "--numstat" "--format=Author:%an%nDate:%at%nCommit:%H%nMessage:%s")))))))
 ;;;
 (defn get-branches
   [project-url]
@@ -33,7 +31,7 @@
 ;;; log format as:
 ;;; git log --numstat --format="Author:%an%nDate:%at%nCommit:%H%nMessage:%s"
 ;;;
-(comment
+(comment "
 Author:lx.mao
 Date:1428461520
 Commit:85fa48a1409bb22b70b9d4d6173766d7777e741d
@@ -53,14 +51,10 @@ Message:[ReacTV] Renamed resource file for build issue
 
 -       -       source/ReacTV/res/drawable/App_icon_original.png
 -       -       source/ReacTV/res/drawable/app_icon_original.png
-Author:Jonathan Jeurissen
+Author:Jonathan Jeurissen"
 
 )
-(defn get-commit-revision
-  [line]
-  (if-let [ret (clojure.string/split line #":")]
-    (if (= (nth ret 0) "Commit")
-      (nth ret 1))))
+
 (defn get-commit-author
   [line]
   (if-let [ret (clojure.string/split line #":")]
@@ -71,18 +65,55 @@ Author:Jonathan Jeurissen
   (if-let [ret (clojure.string/split line #":")]
     (if (= (nth ret 0) "Date")
       (nth ret 1))))
+(defn get-commit-revision
+  [line]
+  (if-let [ret (clojure.string/split line #":")]
+    (if (= (nth ret 0) "Commit")
+      (nth ret 1))))
 (defn get-commit-message
   [line]
   (if-let [ret (clojure.string/split line #":")]
     (if (= (nth ret 0) "Message")
       (nth ret 1))))
 
-;;; return add delete file vector
+;;; return [add delete file] vector
 (defn get-change-file
   [line]
   (if-let [ret (clojure.string/split line #"\t")]
     ret))
 
+(defn is-author?
+  [line]
+  (.startsWith line "Author"))
+(defn is-date?
+  [line]
+  (.startsWith line "Date"))
+(defn is-commit?
+  [line]
+  (.startsWith line "Commit"))
+(defn is-message?
+  [line]
+  (.startsWith line "Message"))
+
+
+  
+(defrecord commit-rec
+  [author date revision message ])
+(defrecord change-rec
+  [add-line delete-line file])
+(defrecord log-rec
+  [commit-rec changeset-rec])
+
+
+
+;;; parse output from git log
+(defn parse-git-log
+  [dir]
+  (let [lines (git-log dir)]
+    (loop [ls lines]
+      (println ls)
+      
+      )))
 
 ;;;=============================================
 ;;; data manipulation

@@ -10,8 +10,8 @@
 (use 'korma.core)
 
 (comment 
-drop table commitlog;
-create table commitlog(id int primary key auto_increment,
+drop table commit;
+create table commit(id int primary key auto_increment,
                author varchar(20), 
                commit_date timestamp , 
                revision varchar(40), 
@@ -38,17 +38,26 @@ create table urtlog(id int primary key auto_increment,
 )
 
 
-(defentity gitlog)
-(defentity svnlog)
+(defentity commit)
+(defentity changeset)
 (defentity urtlog)
 
-(defrecord gitlog_rec 
-  [name,commit_date,revision, commit_message,
-   add_line,delete_line,project_url ])
-(defn insert-gitlog
+; define commitlog record
+(defrecord commitlog-rec 
+  [author,commit_date,revision, commit_message,project_url ])
+
+(defn insert-commitlog
   [rec ]
-(insert gitlog 
+(insert commitlog 
         (values rec)))
+;;; define changeset record
+(defrecord changeset-rec
+  [commit_id,add_line, delete_line, file])
+
+(defn insert-changeset
+  [rec]
+  (insert changeset
+          (values rec)))
 
 
 
