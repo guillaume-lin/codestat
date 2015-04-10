@@ -15,15 +15,15 @@ create table commit(id int primary key auto_increment,
                author varchar(20), 
                commit_date timestamp , 
                revision varchar(40), 
-               commit_message varchar(80),
-               project_url varchar(80));
+               message varchar(255),
+               project_url varchar(255));
 
 drop table changeset;
 create table changeset(id int primary key auto_increment,
                           commit_id int,
                           add_line int,
                           delete_line int,
-                          file varchar(80));
+                          file varchar(255));
                           
 drop table urtlog;
 create table urtlog(id int primary key auto_increment,
@@ -33,7 +33,7 @@ create table urtlog(id int primary key auto_increment,
                issue_title varchar(80),
                operator varchar(20), 
                operator_type varchar(10), 
-               project_url varchar(80));
+               project_url varchar(255));
 
 )
 
@@ -42,22 +42,32 @@ create table urtlog(id int primary key auto_increment,
 (defentity changeset)
 (defentity urtlog)
 
-; define commitlog record
-(defrecord commitlog-rec 
-  [author,commit_date,revision, commit_message,project_url ])
 
-(defn insert-commitlog
+(defn insert-commit
   [rec ]
-(insert commitlog 
-        (values rec)))
-;;; define changeset record
-(defrecord changeset-rec
-  [commit_id,add_line, delete_line, file])
+(insert commit 
+        (values {:author (:author rec)
+                 :commit_date (java.sql.Timestamp. (* 1000 (Integer/parseInt (:commit_date rec))))
+                 :revision (:revision rec)
+                 :message (:message rec)
+                 })))
 
 (defn insert-changeset
-  [rec]
+  [commit_id rec ]
   (insert changeset
-          (values rec)))
+          (values {:commit_id commit_id
+                   :add_line (:add_line rec)
+                   :delete_line (:delete_line rec)
+                   :file (:file rec)})))
+
+(defn insert-log
+  [rec ]
+  (if-let [commit_id (:generated_key (insert-commit (:commit-rec rec)))]
+    (for [r (:changeset-rec rec)]
+      (insert-changeset commit_id r))))
+
+
+
 
 
 
