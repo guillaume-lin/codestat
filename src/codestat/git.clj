@@ -9,11 +9,55 @@
 (def ^:dynamic *workspace* "/home/jenkins/workspace")
 
 
+(defn line-seq-from-string
+  [str]
+  (line-seq 
+    (java.io.BufferedReader. 
+      (java.io.StringReader. str))))
+  
+;git@172.20.30.2:aoc-2k15-app/aoc-2k15-launcher.git
+(defn git-clone
+  [project-url]
+  (with-sh-dir *workspace*
+    (sh "git" "clone" project-url)))
+  
 ;;;
 (defn git-pull
   [dir]
   (with-sh-dir dir 
   (sh "git" "pull")))
+
+; return the final part of the git project url
+(defn get-git-dir
+  [project-url]
+  (first 
+    (clojure.string/split
+      (nth 
+        (clojure.string/split project-url #"/") 1) #"\.")))
+(defn get-full-git-dir
+  [project-url]
+  (str *workspace* "/" 
+       (get-git-dir project-url)))
+;
+(defn update-git-code
+  [project-url]
+  (let [dir (get-full-git-dir project-url)]
+    (if 
+      (.exists 
+        (java.io.File. dir))
+      (git-pull dir)
+      (git-clone project-url))))
+;
+(defn get-git-branches
+  [project-url]
+  (map #(clojure.string/trim 
+          (clojure.string/replace % "*" ""))
+       (line-seq-from-string 
+         (:out 
+           (with-sh-dir 
+             (get-full-git-dir project-url)
+             (sh "git" "branch"))))))
+    
 ;;; 
 ;;; return a line-seq of git logs
 ;;;
@@ -23,10 +67,6 @@
               (java.io.StringReader. 
                 (:out (with-sh-dir dir
                         (sh "git" "log" "--numstat" "--format=LOG%nAuthor:%an%nDate:%at%nCommit:%H%nMessage:%s")))))))
-;;;
-(defn get-branches
-  [project-url]
-  ())
 
 ;;; 
 ;;; log format as:
@@ -174,5 +214,19 @@ Author:Jonathan Jeurissen"
   [dir]
   (reduce + (map count-change-line-of-rec (parse-git-log dir))))
 
-  
+
+;;; record for project
+(defrecord project-rec
+  [project_id project_name project_desc
+   vcs_url vcs_login vcs_pass
+   issue_url issue_login issue_pass])
+
+;;;
+;;; read project configuration from database
+;;; start collect git log to database
+;;;
+(defn collect-git-log
+  []
+  ())
+
 

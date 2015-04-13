@@ -16,7 +16,8 @@ create table commit(id int primary key auto_increment,
                commit_date timestamp , 
                revision varchar(40), 
                message varchar(255),
-               project_url varchar(255));
+               branch varchar(255),
+               project_id int);
 
 drop table changeset;
 create table changeset(id int primary key auto_increment,
@@ -24,23 +25,43 @@ create table changeset(id int primary key auto_increment,
                           add_line int,
                           delete_line int,
                           file varchar(255));
-                          
-drop table urtlog;
-create table urtlog(id int primary key auto_increment,
-               name varchar(20), 
-               operate_date timestamp, 
+drop table issue;
+create table issue (issue_no int primary key,
+                    issue_title varchar(255),
+                    issue_status varchar(20),
+                    issue_assignee varchar(20));
+
+drop table issuelog;
+create table issuelog(id int primary key auto_increment,
                issue_no int,
-               issue_title varchar(80),
-               operator varchar(20), 
-               operator_type varchar(10), 
+               operator varchar(40), 
+               operate_date timestamp, 
+               operator_type varchar(10),
+               assignee varchar(40);
                project_url varchar(255));
 
+drop table project;
+create table project(id int primary key auto_increment,
+                     project_name varchar(255),
+                     project_desc varchar(255),
+                     vcs_url varchar(255) unique,
+                     vcs_login varchar(20),
+                     vcs_pass varchar(20),
+                     issue_url varchar(255) unique,
+                     issue_login varchar(20),
+                     issue_pass varchar(20));
+
+drop table author;
+create table author (id int primary key auto_increment,
+                     author_name varchar(20),
+                     author_grade int);
 )
 
 
 (defentity commit)
 (defentity changeset)
 (defentity urtlog)
+(defentity project)
 
 
 (defn insert-commit
@@ -65,6 +86,20 @@ create table urtlog(id int primary key auto_increment,
   (if-let [commit_id (:generated_key (insert-commit (:commit-rec rec)))]
     (for [r (:changeset-rec rec)]
       (insert-changeset commit_id r))))
+
+;;;
+;;; insert a project
+;;;
+(defn insert-project
+  [rec]
+  (insert project
+          (values (dissoc rec :project_id)))); // remove project_id in the record
+;;;
+;;; query all the project
+;;;
+(defn query-project
+  []
+  (select project))
 
 
 

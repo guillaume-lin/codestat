@@ -24,3 +24,24 @@
     :headers {"Content-Type" "text/plain"}
     :body ret 
 	}))
+
+;;;
+;;; add a project to the database
+;;;/project.add
+;;;
+(defn add-project
+  [req]
+  {:status 200
+   :headers {"Content-Type" "text/plain"}
+   :body ""})
+
+;;;
+;;; return project list
+;;; /project.list
+;;;
+(defn get-project
+  [req]
+  {:status 200
+   :headers {"Content-Type" "text/plain"}
+   :body ""})
+  
