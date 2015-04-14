@@ -2,6 +2,12 @@
   (:use (clojure.java io))
   (:use (codestat mysql git)))
 
+(require '[net.cgrand.enlive-html :as html])
+
+(html/deftemplate add-project-templ "templates/add-project.html"
+  [{:keys [path]}]
+  [:head :title ](html/content "welcome to add project."))
+
 ;;;
 ;;; web interface for code stat
 ;;;
@@ -18,14 +24,15 @@
 ;;;
 (defn add-project
   [req]
-  (insert-project 
-    (->project-rec 
-      0 "project_name" "project_desc"
-      "vcs_url2" "vcs_login2" "vcs_pass2"
-      "issue_url3" "issue_login3" "issue_pass3"))
-  {:status 200
-   :headers {"Content-Type" "text/plain"}
-   :body "add-project"})
+  (if (= (:request-method req) ":post")
+    ;add project
+    {:status 200
+     :headers {"Content-Type" "text/html"}
+     :body "added"}
+    ;else show input form
+    {:status 200
+     :headers {"Content-Type" "text/html"}
+     :body (add-project-templ "")}))
 
 ;;;
 ;;; return project list
@@ -51,7 +58,7 @@
 ;;;
 (def ^:dynamic *handler-map* 
   (hash-map "/project.list" get-project
-            "/project.add" add-project))
+            "/add-project.html" add-project))
 
 
 ;;;

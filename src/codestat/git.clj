@@ -7,8 +7,20 @@
 ;;;==========================================
 
 (def ^:dynamic *workspace* "/home/jenkins/workspace")
-
-
+(def ^:dynamic *debug* false)
+;;; return the final part of the git project url
+(defn get-base-git-dir
+  [project-url]
+  (first 
+    (clojure.string/split
+      (nth 
+        (clojure.string/split project-url #"/") 1) #"\.")))
+;;;
+(defn get-full-git-dir
+  [project-url]
+  (str *workspace* "/" 
+       (get-base-git-dir project-url)))
+;;;
 (defn line-seq-from-string
   [str]
   (line-seq 
@@ -18,26 +30,23 @@
 ;git@172.20.30.2:aoc-2k15-app/aoc-2k15-launcher.git
 (defn git-clone
   [project-url]
+  (println "git clone " project-url)
   (with-sh-dir *workspace*
     (sh "git" "clone" project-url)))
   
 ;;;
 (defn git-pull
-  [dir]
-  (with-sh-dir dir 
-  (sh "git" "pull")))
+  [project-url]
+  (println "git pull " project-url)
+  (with-sh-dir (get-full-git-dir project-url) 
+    (sh "git" "pull")))
+;;;
+(defn git-checkout-branch
+  [project-url branch]
+  (println "checkout " branch " from " project-url)
+  (with-sh-dir (get-full-git-dir project-url)
+    (sh "git" "checkout" branch)))
 
-; return the final part of the git project url
-(defn get-git-dir
-  [project-url]
-  (first 
-    (clojure.string/split
-      (nth 
-        (clojure.string/split project-url #"/") 1) #"\.")))
-(defn get-full-git-dir
-  [project-url]
-  (str *workspace* "/" 
-       (get-git-dir project-url)))
 ;
 (defn update-git-code
   [project-url]
@@ -45,27 +54,28 @@
     (if 
       (.exists 
         (java.io.File. dir))
-      (git-pull dir)
+      (git-pull project-url)
       (git-clone project-url))))
 ;
 (defn get-git-branches
   [project-url]
-  (map #(clojure.string/trim 
-          (clojure.string/replace % "*" ""))
-       (line-seq-from-string 
-         (:out 
-           (with-sh-dir 
-             (get-full-git-dir project-url)
-             (sh "git" "branch"))))))
+  (distinct (map 
+              #(.substring % (+ 7 (.lastIndexOf % "origin/"))) 
+                 (line-seq-from-string 
+                   (:out 
+                     (with-sh-dir 
+                       (get-full-git-dir project-url)
+                       (sh "git" "branch" "-r")))))))
     
 ;;; 
 ;;; return a line-seq of git logs
 ;;;
 (defn git-log
-  [dir]
+  [project-url]
+  (println "git log " project-url)
   (line-seq (java.io.BufferedReader. 
               (java.io.StringReader. 
-                (:out (with-sh-dir dir
+                (:out (with-sh-dir (get-full-git-dir project-url)
                         (sh "git" "log" "--numstat" "--format=LOG%nAuthor:%an%nDate:%at%nCommit:%H%nMessage:%s")))))))
 
 ;;; 
@@ -141,9 +151,11 @@ Author:Jonathan Jeurissen"
   (.startsWith line "Message"))
 
 (defn get-log-seq
-  [dir]
-  (remove (fn[%] (is-log? (first %)))  
-          (partition-by is-log? (git-log dir))))
+  [project-url ]
+  (remove #(is-log? (first %))  
+          (partition-by 
+            is-log? 
+            (git-log project-url))))
 
 (defrecord commit-rec
   [author commit_date revision message ])
@@ -195,13 +207,13 @@ Author:Jonathan Jeurissen"
   
 ;;; parse output from git log
 (defn parse-git-log
-  [dir]
-  (for [line (get-log-seq dir)]
+  [project-url]
+  (for [line (get-log-seq project-url)]
     (parse-log-rec line)))
 
 (defn insert-git-log
-  [dir]
-  (for [log (parse-git-log dir)](insert-log log)))
+  [project-url]
+  (doseq [log (parse-git-log project-url)](insert-log log)))
 
 
 ;;; count change line of record
@@ -211,8 +223,8 @@ Author:Jonathan Jeurissen"
      (reduce + (map :delete-line (:changeset-rec rec)))))
 ;;;
 (defn count-change-line-of-log
-  [dir]
-  (reduce + (map count-change-line-of-rec (parse-git-log dir))))
+  [project-url]
+  (reduce + (map count-change-line-of-rec (parse-git-log project-url))))
 
 
 ;;; record for project
@@ -226,7 +238,12 @@ Author:Jonathan Jeurissen"
 ;;; start collect git log to database
 ;;;
 (defn collect-git-log
-  []
-  ())
+  [project-url work-dir]
+  (binding [*workspace* work-dir]
+    (doseq [brch (get-git-branches project-url)]
+      (update-git-code project-url)
+      (git-checkout-branch project-url brch)
+      (insert-git-log project-url))))
+
 
 

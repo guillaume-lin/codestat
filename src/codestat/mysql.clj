@@ -38,7 +38,7 @@ create table issuelog(id int primary key auto_increment,
                operate_date timestamp, 
                operator_type varchar(10),
                assignee varchar(40);
-               project_url varchar(255));
+               project_id int);
 
 drop table project;
 create table project(id int primary key auto_increment,
@@ -66,15 +66,17 @@ create table author (id int primary key auto_increment,
 
 (defn insert-commit
   [rec ]
-(insert commit 
-        (values {:author (:author rec)
-                 :commit_date (java.sql.Timestamp. (* 1000 (Integer/parseInt (:commit_date rec))))
-                 :revision (:revision rec)
-                 :message (:message rec)
-                 })))
+  ;(println "insert commit: " rec)
+  (insert commit 
+          (values {:author (:author rec)
+                   :commit_date (java.sql.Timestamp. (* 1000 (Integer/parseInt (:commit_date rec))))
+                   :revision (:revision rec)
+                   :message (:message rec)
+                   })))
 
 (defn insert-changeset
   [commit_id rec ]
+  ;(println "insert changeset: " commit_id rec)
   (insert changeset
           (values {:commit_id commit_id
                    :add_line (:add_line rec)
