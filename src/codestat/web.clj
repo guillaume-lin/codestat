@@ -8,6 +8,20 @@
   [{:keys [path]}]
   [:head :title ](html/content "welcome to add project."))
 
+;;; fill the second :tr with project list
+(html/deftemplate list-project-templ "templates/list-project.html"
+  [recs ]
+  [:body :table [:tr (html/nth-of-type 2)]] 
+  (html/clone-for [rec recs ](html/html-content 
+                               (str "<tr>"
+                                    "<td>" (:project_id rec) "</td>"
+                                    "<td>" (:project_name rec) "</td>"
+                                    "<td>" (:project_desc rec) "</td>"
+                                    "<td>" (:vcs_url rec) "</td>"
+                                    "<td>" (:issue_url rec) "</td>"
+                                    "</tr>"))))
+
+ 
 ;;;
 ;;; web interface for code stat
 ;;;
@@ -18,17 +32,39 @@
 		(spit (str "/tmp/" (gensym)) ret)
 		ret))
 
+;;; "a=b"  -> {:a b}
+(defn get-map 
+  [line]
+  (let [pair (clojure.string/split line #"=")]
+    (assoc {} (keyword (first pair)) (second pair))))
+
+;;; get the query map
+(defn get-qmap-from-string
+  [line]
+  (println "get-qmap-from-string: " line)
+  (reduce merge (map get-map (clojure.string/split line #"&"))))
+
+(defn get-add-project-input
+  [line ]
+  (let [rec (get-qmap-from-string line)]
+    (->project-rec 0 (:project_name rec) (:project_desc rec) 
+                   (:vcs_url rec) (:vcs_login rec) (:vcs_pass rec) 
+                   (:issue_url rec) (:issue_login rec) (:issue_pass rec))))
+
 ;;;
 ;;; add a project to the database
 ;;;/project.add
 ;;;
 (defn add-project
   [req]
-  (if (= (:request-method req) ":post")
+  (println "add-project with request-method " (:request-method req))
+  (if (= (:request-method req) :post)
     ;add project
-    {:status 200
-     :headers {"Content-Type" "text/html"}
-     :body "added"}
+    (let [rec (get-add-project-input (first (get-body (:body req))))]
+      (insert-project rec)
+      {:status 200
+       :headers {"Content-Type" "text/html"}
+       :body "added"})
     ;else show input form
     {:status 200
      :headers {"Content-Type" "text/html"}
@@ -38,26 +74,18 @@
 ;;; return project list
 ;;; /project.list
 ;;;
-(defn get-project
+(defn list-project
   [req]
-  (let [sb (StringBuffer.)]
-    (.append sb "<html><body><table>")
-    (doseq [p (query-project)]
-      (-> sb (.append "<tr>")
-        (.append  "<td>") (.append (:project_name p)) (.append "</td>") 
-        (.append "<td>") (.append (:vcs_url p)) (.append "</td>") 
-        (.append "<td>") (.append (:issue_url p)) (.append "</td>") 
-        (.append "</tr>")))
-    (.append sb "</table></body></html>")
-    {:status 200
-     :headers {"Content-Type" "text/html"}
-     :body (.toString sb)}))
+  (let [recs (query-project)]
+  {:status 200
+   :headers {"Content-Type" "text/html"}
+   :body (apply str (list-project-templ recs))}))
 
 ;;;
 ;;; define handler map
 ;;;
 (def ^:dynamic *handler-map* 
-  (hash-map "/project.list" get-project
+  (hash-map "/list-project.html" list-project
             "/add-project.html" add-project))
 
 
