@@ -226,10 +226,14 @@ Author:Jonathan Jeurissen"
   [project-url]
   (reduce + (map count-change-line-of-rec (parse-git-log project-url))))
 
+;;; return a map with keys [:author  :change-line]
+(defn count-change-line-by-author
+  [project-url]
+  ())
 
 ;;; record for project
 (defrecord project-rec
-  [project_id project_name project_desc
+  [id project_name project_desc
    vcs_url vcs_login vcs_pass
    issue_url issue_login issue_pass])
 
@@ -244,6 +248,7 @@ Author:Jonathan Jeurissen"
       (update-git-code project-url)
       (git-checkout-branch project-url brch)
       (insert-git-log project-url))))
+
 
 
 

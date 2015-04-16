@@ -103,6 +103,17 @@ create table author (id int primary key auto_increment,
   []
   (select project))
 
+(defn query-project-by-vcs-url
+  [vcs-url]
+  (select project (where {:vcs_url vcs-url})))
+
+(defn query-commit-by-project-id
+  [project-id]
+  (select commit (where {:project_id project-id})))
+
+(defn query-changeset-by-commit-id
+  [commit-id]
+  (select changeset (where {:commit_id commit-id})))
 
 
 

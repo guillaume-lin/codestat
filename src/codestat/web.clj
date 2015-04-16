@@ -14,14 +14,23 @@
   [:body :table [:tr (html/nth-of-type 2)]] 
   (html/clone-for [rec recs ](html/html-content 
                                (str "<tr>"
-                                    "<td>" (:project_id rec) "</td>"
+                                    "<td>" (:id rec) "</td>"
                                     "<td>" (:project_name rec) "</td>"
                                     "<td>" (:project_desc rec) "</td>"
                                     "<td>" (:vcs_url rec) "</td>"
                                     "<td>" (:issue_url rec) "</td>"
                                     "</tr>"))))
 
- 
+;;; count aspect of projects
+(html/deftemplate count-project-templ "templates/count-project.html"
+  [project-url]
+  [:body :table :#count_project_by_author ]
+  (html/content "project")
+  [:body :table :#count_commit_by_author ]
+  (html/content "commit")
+  [:body :table :#count_change_line_by_author]
+  (html/content "change line"))
+
 ;;;
 ;;; web interface for code stat
 ;;;
@@ -62,8 +71,8 @@
     ;add project
     (let [rec (get-add-project-input (first (get-body (:body req))))]
       (insert-project rec)
-      {:status 200
-       :headers {"Content-Type" "text/html"}
+      {:status 301
+       :headers {"Location" "/list-project.html"}
        :body "added"})
     ;else show input form
     {:status 200
@@ -81,11 +90,18 @@
    :headers {"Content-Type" "text/html"}
    :body (apply str (list-project-templ recs))}))
 
+(defn count-project
+  [req]
+  {:status 200
+   :headers {"Content-Type" "text/html"}
+   :body (apply str (count-project-templ req))})
+
 ;;;
 ;;; define handler map
 ;;;
 (def ^:dynamic *handler-map* 
   (hash-map "/list-project.html" list-project
+            "/count-project.html" count-project
             "/add-project.html" add-project))
 
 
