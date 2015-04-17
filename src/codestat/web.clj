@@ -23,13 +23,16 @@
 
 ;;; count aspect of projects
 (html/deftemplate count-project-templ "templates/count-project.html"
-  [project-url]
-  [:body :table :#count_project_by_author ]
-  (html/content "project")
-  [:body :table :#count_commit_by_author ]
-  (html/content "commit")
-  [:body :table :#count_change_line_by_author]
-  (html/content "change line"))
+  [project-rec commit-rec changeline-rec]
+  [:body :table :tr#count_project_by_author ]
+  (html/html-content 
+    (str "<h2>project</h2>"))
+  [:body :table :tr#count_commit_by_author ]
+  (html/html-content 
+    (str "<h2>commit</h2>"))
+  [:body :table :tr#count_change_line_by_author]
+  (html/html-content 
+    (str "<h2>change line</h2>")))
 
 ;;;
 ;;; web interface for code stat
@@ -90,11 +93,19 @@
    :headers {"Content-Type" "text/html"}
    :body (apply str (list-project-templ recs))}))
 
+
+;;;
+;;; /count-project.html
+;;; stat the project
 (defn count-project
   [req]
   {:status 200
    :headers {"Content-Type" "text/html"}
-   :body (apply str (count-project-templ req))})
+   :body
+   (let [project-rec (count-project-by-author) 
+         commit-rec (count-commit-by-author) 
+         cl-rec (count-change-line-by-author)]
+   (apply str (count-project-templ project-rec commit-rec cl-rec)))})
 
 ;;;
 ;;; define handler map

@@ -226,9 +226,36 @@ Author:Jonathan Jeurissen"
   [project-url]
   (reduce + (map count-change-line-of-rec (parse-git-log project-url))))
 
+
+;;; 
+;;; search commit table for this info
+;;; return seq of map [:author :project_id]
+(defn count-project-by-author
+  []
+  (map #({(key %) (count (val %))})
+       (group-by :author 
+                 (distinct 
+                   (map #(select-keys % [:author :project_id])
+                        (query-commit))))))
+         
+
+
+;;;
+;;; search commit table for this info
+;;; return map [:author :commit]
+;;;
+(defn count-commit-by-author
+  []
+  (map #({(key %) (count (val %))})
+       (group-by :author 
+                 (distinct 
+                   (map #(select-keys % [:author :id])
+                        (query-commit))))))
+  
+;;; search commit and changeset table for this info
 ;;; return a map with keys [:author  :change-line]
 (defn count-change-line-by-author
-  [project-url]
+  []
   ())
 
 ;;; record for project
@@ -248,7 +275,6 @@ Author:Jonathan Jeurissen"
       (update-git-code project-url)
       (git-checkout-branch project-url brch)
       (insert-git-log project-url))))
-
 
 
 

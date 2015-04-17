@@ -115,6 +115,10 @@ create table author (id int primary key auto_increment,
   [commit-id]
   (select changeset (where {:commit_id commit-id})))
 
+(defn query-commit
+  []
+  (select commit))
+
 
 
 
