@@ -10,14 +10,29 @@
 (use 'korma.core)
 
 (comment 
+drop table project;
+create table project(id int primary key auto_increment,
+                     project_name varchar(255),
+                     project_desc varchar(255),
+                     vcs_url varchar(255) unique,
+                     vcs_login varchar(20),
+                     vcs_pass varchar(20),
+                     issue_url varchar(255) unique,
+                     issue_login varchar(20),
+                     issue_pass varchar(40));
+drop table author;
+create table author (id int primary key auto_increment,
+                     author_name varchar(40) unique,
+                     author_grade int);
+  
 drop table commit;
 create table commit(id int primary key auto_increment,
-               author varchar(20), 
+               author_name varchar(40), 
                commit_date timestamp , 
                revision varchar(40), 
                message varchar(255),
                branch varchar(255),
-               project_id int);
+               vcs_url varchar(255));
 
 drop table changeset;
 create table changeset(id int primary key auto_increment,
@@ -37,45 +52,34 @@ create table issuelog(id int primary key auto_increment,
                operator varchar(40), 
                operate_date timestamp, 
                operator_type varchar(10),
-               assignee varchar(40);
+               assignee varchar(40),
                project_id int);
 
-drop table project;
-create table project(id int primary key auto_increment,
-                     project_name varchar(255),
-                     project_desc varchar(255),
-                     vcs_url varchar(255) unique,
-                     vcs_login varchar(20),
-                     vcs_pass varchar(20),
-                     issue_url varchar(255) unique,
-                     issue_login varchar(20),
-                     issue_pass varchar(20));
-
-drop table author;
-create table author (id int primary key auto_increment,
-                     author_name varchar(20),
-                     author_grade int);
 )
 
 
+(defentity project)
+(defentity author)
 (defentity commit)
 (defentity changeset)
-(defentity urtlog)
-(defentity project)
+(defentity issue)
+(defentity issuelog)
 
 
 (defn insert-commit
-  [rec ]
+  [rec vcs_url branch]
   ;(println "insert commit: " rec)
   (insert commit 
-          (values {:author (:author rec)
+          (values {:author_name (:author rec)
                    :commit_date (java.sql.Timestamp. (* 1000 (Integer/parseInt (:commit_date rec))))
                    :revision (:revision rec)
                    :message (:message rec)
+                   :vcs_url vcs_url
+                   :branch branch
                    })))
 
 (defn insert-changeset
-  [commit_id rec ]
+  [commit_id rec]
   ;(println "insert changeset: " commit_id rec)
   (insert changeset
           (values {:commit_id commit_id
@@ -84,9 +88,9 @@ create table author (id int primary key auto_increment,
                    :file (:file rec)})))
 
 (defn insert-log
-  [rec ]
-  (if-let [commit_id (:generated_key (insert-commit (:commit-rec rec)))]
-    (for [r (:changeset-rec rec)]
+  [rec vcs_url branch]
+  (if-let [commit_id (:generated_key (insert-commit (:commit-rec rec) vcs_url branch))]
+    (doseq [r (:changeset-rec rec)]
       (insert-changeset commit_id r))))
 
 ;;;
@@ -119,7 +123,17 @@ create table author (id int primary key auto_increment,
   []
   (select commit))
 
+(defn query-commit-by-author
+  [author-id]
+  (select commit (where {:author_id author-id})))
 
+(defn query-author-id-by-author-name
+  [author-name]
+  (select author (where {:author_name author-name})))
+
+(defn query-changeset
+  []
+  (select changeset))
 
 
 

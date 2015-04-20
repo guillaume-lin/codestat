@@ -158,7 +158,7 @@ Author:Jonathan Jeurissen"
             (git-log project-url))))
 
 (defrecord commit-rec
-  [author commit_date revision message ])
+  [author_name commit_date revision message])
 (defrecord change-rec
   [add_line delete_line file])
 (defrecord log-rec
@@ -212,8 +212,8 @@ Author:Jonathan Jeurissen"
     (parse-log-rec line)))
 
 (defn insert-git-log
-  [project-url]
-  (doseq [log (parse-git-log project-url)](insert-log log)))
+  [project-url branch]
+  (doseq [log (parse-git-log project-url)](insert-log log project-url branch)))
 
 
 ;;; count change line of record
@@ -227,36 +227,6 @@ Author:Jonathan Jeurissen"
   (reduce + (map count-change-line-of-rec (parse-git-log project-url))))
 
 
-;;; 
-;;; search commit table for this info
-;;; return seq of map [:author :project_id]
-(defn count-project-by-author
-  []
-  (map #({(key %) (count (val %))})
-       (group-by :author 
-                 (distinct 
-                   (map #(select-keys % [:author :project_id])
-                        (query-commit))))))
-         
-
-
-;;;
-;;; search commit table for this info
-;;; return map [:author :commit]
-;;;
-(defn count-commit-by-author
-  []
-  (map #({(key %) (count (val %))})
-       (group-by :author 
-                 (distinct 
-                   (map #(select-keys % [:author :id])
-                        (query-commit))))))
-  
-;;; search commit and changeset table for this info
-;;; return a map with keys [:author  :change-line]
-(defn count-change-line-by-author
-  []
-  ())
 
 ;;; record for project
 (defrecord project-rec
@@ -274,7 +244,57 @@ Author:Jonathan Jeurissen"
     (doseq [brch (get-git-branches project-url)]
       (update-git-code project-url)
       (git-checkout-branch project-url brch)
-      (insert-git-log project-url))))
+      (insert-git-log project-url brch))))
 
 
+;;; 
+;;; search commit table for this info
+;;; return seq of map [:author :project_id]
+(defn count-project-by-author
+  []
+  (map #({(key %) (count (val %))})
+       (group-by :author_name 
+                 (distinct 
+                   (map #(select-keys % [:author_name :project_id])
+                        (query-commit))))))
+         
+
+
+;;;
+;;; search commit table for this info
+;;; return seq of map [:author :commit]
+;;;
+(defn count-commit-by-author
+  []
+  (map (fn[e] {(key e) (count (val e))})
+       (group-by :author_name 
+                 (distinct 
+                   (map #(select-keys % [:author_name :id])
+                        (query-commit))))))
+ 
+
+(defn- get-author-by-commit-id
+  [commit-id]
+  (:author_name (first 
+                  (filter #(= (:id %) commit-id) 
+                          (map #(select-keys % [:author_name :id]) (query-commit))))))
+(defn get-author-change-line-map
+  []  
+  (group-by #(first (keys %))
+            (map (fn [e]
+                   {(get-author-by-commit-id (first (keys e))) (first (vals e))})
+                 (map (fn[e](hash-map (key e) (reduce + 
+                                                      (map (fn[r] (+ (:add_line r) (:delete_line r))) (val e)))))
+                      (group-by :commit_id 
+                                (map #(select-keys % [:commit_id :add_line :delete_line])
+                                     (query-changeset)))))))
+
+;;; search commit and changeset table for this info
+;;; return seq of map with keys [:author  :change-line]
+(defn count-change-line-by-author
+  []
+  (let [kk (get-author-change-line-map)]
+    (for [k (keys kk)] {k (reduce + (map #(% k) (kk k)))})))
+  
+  
 
