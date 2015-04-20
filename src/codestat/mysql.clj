@@ -70,7 +70,7 @@ create table issuelog(id int primary key auto_increment,
   [rec vcs_url branch]
   ;(println "insert commit: " rec)
   (insert commit 
-          (values {:author_name (:author rec)
+          (values {:author_name (:author_name rec)
                    :commit_date (java.sql.Timestamp. (* 1000 (Integer/parseInt (:commit_date rec))))
                    :revision (:revision rec)
                    :message (:message rec)
