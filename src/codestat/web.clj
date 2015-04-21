@@ -131,9 +131,9 @@
 ;;; define handler map
 ;;;
 (def ^:dynamic *handler-map* 
-  (hash-map "/list-project.html" list-project
-            "/count-project.html" count-project
-            "/add-project.html" add-project))
+  (hash-map "list-project.html" list-project
+            "count-project.html" count-project
+            "add-project.html" add-project))
 
 
 ;;;
@@ -142,7 +142,7 @@
 (defn handler
    "ring handler"
    [req]
-   (if-let [hlr (get *handler-map* (:uri req))]
+   (if-let [hlr (get *handler-map* (last (clojure.string/split (:uri req) #"/")))]
      (hlr req)
    (let [ret (str "uri:" (:uri req) 
              "\nscheme:" (:scheme req)
