@@ -29,7 +29,7 @@ drop table commit;
 create table commit(id int primary key auto_increment,
                author_name varchar(40), 
                commit_date timestamp , 
-               revision varchar(40), 
+               revision varchar(40) unique, 
                message varchar(255),
                branch varchar(255),
                vcs_url varchar(255));
@@ -131,6 +131,11 @@ create table issuelog(id int primary key auto_increment,
   [author-name]
   (select author (where {:author_name author-name})))
 
+(defn query-author-by-commit-id
+  [commit-id]
+  (select commit 
+          (fields [:author_name])
+          (where {:id commit-id})))
 (defn query-changeset
   []
   (select changeset))

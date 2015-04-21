@@ -21,19 +21,39 @@
                                     "<td>" (:issue_url rec) "</td>"
                                     "</tr>"))))
 
+(defn sort-by-count
+  [coll]
+  (sort #(compare (first (vals %2)) (first (vals %1)))
+        coll))
+
 ;;; count aspect of projects
 (html/deftemplate count-project-templ "templates/count-project.html"
-  [project-rec commit-rec changeline-rec]
-  [:body :table :tr#count_project_by_author ]
-  (html/html-content 
-    (str "<h2>project</h2>"))
-  [:body :table :tr#count_commit_by_author ]
-  (html/html-content 
-    (str "<h2>commit</h2>"))
-  [:body :table :tr#count_change_line_by_author]
-  (html/html-content 
-    (str "<h2>change line</h2>")))
-
+  [project-recs commit-recs changeline-recs]
+  [:body :table#count_project_by_author [:tr (html/nth-of-type 2)]]
+  (html/clone-for [prec (sort-by-count project-recs)] 
+    (html/html-content
+      (str "<tr>"
+           "<td>"           "</td>"
+           "<td>" (first (keys prec)) "</td>"
+           "<td>" (first (vals prec)) "</td>"
+           "</tr>")))
+  [:body :table#count_commit_by_author [:tr (html/nth-of-type 2)]]
+  (html/clone-for [crec (sort-by-count commit-recs)] 
+    (html/html-content
+      (str "<tr>"
+           "<td>"           "</td>"
+           "<td>" (first (keys crec)) "</td>"
+           "<td>" (first (vals crec)) "</td>"
+           "</tr>")))
+  [:body :table#count_change_line_by_author [:tr (html/nth-of-type 2)]]
+  (html/clone-for [cl-rec (sort-by-count changeline-recs)] 
+    (html/html-content
+      (str "<tr>"
+           "<td>"           "</td>"
+           "<td>" (first (keys cl-rec)) "</td>"
+           "<td>" (first (vals cl-rec)) "</td>"
+           "</tr>"))))
+  
 ;;;
 ;;; web interface for code stat
 ;;;

@@ -13,8 +13,8 @@
   [project-url]
   (first 
     (clojure.string/split
-      (nth 
-        (clojure.string/split project-url #"/") 1) #"\.")))
+      (last 
+        (clojure.string/split project-url #"/")) #"\.")))
 ;;;
 (defn get-full-git-dir
   [project-url]
@@ -241,8 +241,8 @@ Author:Jonathan Jeurissen"
 (defn collect-git-log
   [project-url work-dir]
   (binding [*workspace* work-dir]
+    (update-git-code project-url)
     (doseq [brch (get-git-branches project-url)]
-      (update-git-code project-url)
       (git-checkout-branch project-url brch)
       (insert-git-log project-url brch))))
 
@@ -252,7 +252,7 @@ Author:Jonathan Jeurissen"
 ;;; return seq of map [:author :project_id]
 (defn count-project-by-author
   []
-  (map #({(key %) (count (val %))})
+  (map (fn [e] {(key e) (count (val e))})
        (group-by :author_name 
                  (distinct 
                    (map #(select-keys % [:author_name :project_id])
@@ -276,8 +276,8 @@ Author:Jonathan Jeurissen"
 (defn- get-author-by-commit-id
   [commit-id]
   (:author_name (first 
-                  (filter #(= (:id %) commit-id) 
-                          (map #(select-keys % [:author_name :id]) (query-commit))))))
+                  (query-author-by-commit-id commit-id))))
+
 (defn get-author-change-line-map
   []  
   (group-by #(first (keys %))
