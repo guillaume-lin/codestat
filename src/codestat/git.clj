@@ -296,5 +296,58 @@ Author:Jonathan Jeurissen"
   (let [kk (get-author-change-line-map)]
     (for [k (keys kk)] {k (reduce + (map #(% k) (kk k)))})))
   
-  
+
+(require '[net.cgrand.enlive-html :as html])
+(require '[clojure.data.json :as json])
+
+;;; private token for gitlab
+(def PRIVATE-TOKEN "we7YH2bXscT7MsEAs8t5")
+
+(defn get-project-page
+  [gitlab-server page-no]
+  (html/html-resource (java.net.URL. (str gitlab-server 
+                                          "/api/v3/projects?"
+                                          "private_token="
+                                          PRIVATE-TOKEN
+                                          "&page="
+                                          page-no))))
+(defn page-to-json
+  [page]
+  (json/read-str (first (:content (first (:content (first page)))))))
+
+;;;
+;;; get project list from gitlab server
+;;;
+(defn get-project-list
+  [gitlab-server]
+  (loop [v [] page 1]
+    (let  [pg (get-project-page gitlab-server page)
+           js (page-to-json pg)]
+      (if (> (count js) 0)
+        (recur (into v js)  (inc page))
+        v))))
+
+(def active-project-set
+  (hash-set 
+    "ots-flagship-2k15"
+    "aoc-2k15-app"
+    "ebony-2k15-app"
+    "mobile"
+    "innovation"
+    ))
+
+(defn active-project?
+  [name]
+  (contains? active-project-set 
+             (.substring name (+ 1 (.indexOf name ":")) (.indexOf name "/")) ))
+(defn get-project-git-list
+  [project-list]
+  (filter active-project? (map #(get % "ssh_url_to_repo") project-list)))
+
+
+
+(defn collect-all-git-log
+  [gitlab-server]
+  (doseq [project (get-project-git-list (get-project-list gitlab-server))]
+    (collect-git-log project "/tmp/ws")))
 
