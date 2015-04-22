@@ -89,9 +89,12 @@ create table issuelog(id int primary key auto_increment,
 
 (defn insert-log
   [rec vcs_url branch]
-  (if-let [commit_id (:generated_key (insert-commit (:commit-rec rec) vcs_url branch))]
-    (doseq [r (:changeset-rec rec)]
-      (insert-changeset commit_id r))))
+  (try 
+    (if-let [commit_id (:generated_key (insert-commit (:commit-rec rec) vcs_url branch))]
+      (doseq [r (:changeset-rec rec)]
+        (insert-changeset commit_id r)))
+    (catch Exception e
+      (println ">>> insert-log Exception:" (.getMessage e)))))
 
 ;;;
 ;;; insert a project
