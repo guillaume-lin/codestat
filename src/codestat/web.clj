@@ -4,6 +4,15 @@
 
 (require '[net.cgrand.enlive-html :as html])
 
+(defprotocol SerialNo
+  (reset [this])
+  (next [this]))
+(deftype SerialNoGenerator [ ^:volatile-mutable serial-no ]
+  SerialNo
+  (reset [this] (set! serial-no 0))
+  (next [this] (set! serial-no (inc serial-no))))
+ 
+
 (html/deftemplate add-project-templ "templates/add-project.html"
   [{:keys [path]}]
   [:head :title ](html/content "welcome to add project."))
@@ -11,48 +20,53 @@
 ;;; fill the second :tr with project list
 (html/deftemplate list-project-templ "templates/list-project.html"
   [recs ]
-  [:body :table [:tr (html/nth-of-type 2)]] 
-  (html/clone-for [rec recs ](html/html-content 
-                               (str "<tr>"
-                                    "<td>" (:id rec) "</td>"
-                                    "<td>" (:project_name rec) "</td>"
-                                    "<td>" (:project_desc rec) "</td>"
-                                    "<td>" (:vcs_url rec) "</td>"
-                                    "<td>" (:issue_url rec) "</td>"
-                                    "</tr>"))))
+  [:body :table [:tr (html/nth-of-type 2)]]
+  (let [sg (->SerialNoGenerator 0)]
+    (html/clone-for [rec recs ](html/html-content 
+                                 (str "<tr>"
+                                      "<td>" (.next sg) "</td>"
+                                      "<td>" (:project_name rec) "</td>"
+                                      "<td>" (:project_desc rec) "</td>"
+                                      "<td>" (:vcs_url rec) "</td>"
+                                      "<td>" (:issue_url rec) "</td>"
+                                      "</tr>")))))
 
 (defn sort-by-count
   [coll]
   (sort #(compare (first (vals %2)) (first (vals %1)))
         coll))
 
+
 ;;; count aspect of projects
 (html/deftemplate count-project-templ "templates/count-project.html"
   [project-recs commit-recs changeline-recs]
   [:body :table#count_project_by_author [:tr (html/nth-of-type 2)]]
-  (html/clone-for [prec (sort-by-count project-recs)] 
-    (html/html-content
-      (str "<tr>"
-           "<td>"           "</td>"
-           "<td>" (first (keys prec)) "</td>"
-           "<td>" (first (vals prec)) "</td>"
-           "</tr>")))
+  (let [sg (->SerialNoGenerator 0)]
+    (html/clone-for [prec (sort-by-count project-recs)] 
+                    (html/html-content
+                      (str "<tr>"
+                           "<td>"  (.next sg)         "</td>"
+                           "<td>" (first (keys prec)) "</td>"
+                           "<td>" (first (vals prec)) "</td>"
+                           "</tr>"))))
   [:body :table#count_commit_by_author [:tr (html/nth-of-type 2)]]
-  (html/clone-for [crec (sort-by-count commit-recs)] 
-    (html/html-content
-      (str "<tr>"
-           "<td>"           "</td>"
-           "<td>" (first (keys crec)) "</td>"
-           "<td>" (first (vals crec)) "</td>"
-           "</tr>")))
+  (let [sg1 (->SerialNoGenerator 0)]
+    (html/clone-for [crec (sort-by-count commit-recs)] 
+                    (html/html-content
+                      (str "<tr>"
+                           "<td>"  (.next sg1)         "</td>"
+                           "<td>" (first (keys crec)) "</td>"
+                           "<td>" (first (vals crec)) "</td>"
+                           "</tr>"))))
   [:body :table#count_change_line_by_author [:tr (html/nth-of-type 2)]]
-  (html/clone-for [cl-rec (sort-by-count changeline-recs)] 
-    (html/html-content
-      (str "<tr>"
-           "<td>"           "</td>"
-           "<td>" (first (keys cl-rec)) "</td>"
-           "<td>" (first (vals cl-rec)) "</td>"
-           "</tr>"))))
+  (let [sg2 (->SerialNoGenerator 0)]
+    (html/clone-for [cl-rec (sort-by-count changeline-recs)] 
+                    (html/html-content
+                      (str "<tr>"
+                           "<td>"  (.next sg2)         "</td>"
+                           "<td>" (first (keys cl-rec)) "</td>"
+                           "<td>" (first (vals cl-rec)) "</td>"
+                           "</tr>")))))
   
 ;;;
 ;;; web interface for code stat
