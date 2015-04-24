@@ -261,7 +261,7 @@ Author:Jonathan Jeurissen"
   (map (fn [e] {(key e) (count (val e))})
        (group-by :author_name 
                  (distinct 
-                   (map #(select-keys % [:author_name :project_id])
+                   (map #(select-keys % [:author_name :vcs_url])
                         (query-commit))))))
          
 
@@ -354,6 +354,9 @@ Author:Jonathan Jeurissen"
 
 (defn collect-all-git-log
   [gitlab-server]
+  (println "start collect all git log ...")
   (doseq [project (get-project-git-list (get-project-list gitlab-server))]
-    (collect-git-log project "/tmp/ws")))
+    (collect-git-log project "/tmp/ws"))
+  (println "collect done."))
+
 
