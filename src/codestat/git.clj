@@ -76,17 +76,19 @@
   (line-seq (java.io.BufferedReader. 
               (java.io.StringReader. 
                 (:out (with-sh-dir (get-full-git-dir project-url)
-                        (sh "git" "log" "--numstat" "--format=LOG%nAuthor:%an%nDate:%at%nCommit:%H%nMessage:%s")))))))
+                        (sh "git" "log" "--numstat" "--format=LOG%nAuthor:%an%nDate:%at%nCommit:%H%nMessage:%s%nEND")))))))
 
 ;;; 
 ;;; log format as:
-;;; git log --numstat --format="Author:%an%nDate:%at%nCommit:%H%nMessage:%s"
+;;; git log --numstat --format=LOG%nAuthor:%an%nDate:%at%nCommit:%H%nMessage:%s%nEND"
 ;;;
 (comment "
+LOG
 Author:lx.mao
 Date:1428461520
 Commit:85fa48a1409bb22b70b9d4d6173766d7777e741d
 Message:[TvApp]Show channel logo and current program's thumbnail on channel list.
+END
 
 6       0       source/TvApp/res/layout/channel_item.xml
 4       2       source/TvApp/res/values/dimens.xml
@@ -95,37 +97,54 @@ Message:[TvApp]Show channel logo and current program's thumbnail on channel list
 0       7       source/TvApp/src/org/droidtv/playtvapp/browse/SourceBrowser.java
 1       1       source/TvApp/src/org/droidtv/playtvapp/data/Channel.java
 5       0       source/TvApp/src/org/droidtv/playtvapp/data/Data.java
+LOG
 Author:Jonathan Jeurissen
 Date:1428422271
 Commit:2e99f048810717b7a49eb328cac95c87bc4691c8
 Message:[ReacTV] Renamed resource file for build issue
+END
 
 -       -       source/ReacTV/res/drawable/App_icon_original.png
 -       -       source/ReacTV/res/drawable/app_icon_original.png
 Author:Jonathan Jeurissen"
 
 )
+;;; "Author:xxxx"
+(defn get-commit-field
+  [lst field]
+  (loop  [ls lst]
+    (if-let [line (first ls)]
+      (if-let [ret (clojure.string/split line #":" 2)]
+        (if (= (nth ret 0) field)
+          (nth ret 1)
+          (recur (rest ls)))))))
 
-(defn get-commit-author
-  [line]
-  (if-let [ret (clojure.string/split line #":")]
-    (if (= (nth ret 0) "Author")
-      (nth ret 1))))
-(defn get-commit-date
-  [line]
-  (if-let [ret (clojure.string/split line #":")]
-    (if (= (nth ret 0) "Date")
-      (nth ret 1))))
-(defn get-commit-revision
-  [line]
-  (if-let [ret (clojure.string/split line #":")]
-    (if (= (nth ret 0) "Commit")
-      (nth ret 1))))
+
+(defn- find-index-of
+  [s lst]
+  (loop [idx 0 ls lst]
+    (if (.startsWith (first ls) s)
+      idx
+      (recur (inc idx) (rest ls)))))
+  
+(defn- get-message-start
+  [lst]
+  (find-index-of "Message:" lst))
+(defn- get-message-end
+  [lst]
+  (find-index-of "END" lst))
+
+(defn- remove-message-head
+  [s]
+  (last (clojure.string/split s #"Message:" 2)))
+
+;;; "Message:xxxx" "..." ... "END" ""
 (defn get-commit-message
-  [line]
-  (if-let [ret (clojure.string/split line #":")]
-    (if (= (nth ret 0) "Message")
-      (nth ret 1))))
+  [lst]
+  (let [s (get-message-start lst) e (get-message-end lst)]
+    (remove-message-head (apply str (map #(str % "\n") 
+                                         (drop s (take e lst))
+                                         )))))
 
 ;;; return [add delete file] vector
 (defn get-change-file
@@ -136,19 +155,6 @@ Author:Jonathan Jeurissen"
 (defn is-log?
   [line]
   (.startsWith line "LOG"))
-
-(defn is-author?
-  [line]
-  (.startsWith line "Author"))
-(defn is-date?
-  [line]
-  (.startsWith line "Date"))
-(defn is-commit?
-  [line]
-  (.startsWith line "Commit"))
-(defn is-message?
-  [line]
-  (.startsWith line "Message"))
 
 (defn get-log-seq
   [project-url ]
@@ -168,10 +174,10 @@ Author:Jonathan Jeurissen"
 ;;; lst is like: ("Author:..." "Date:..." ....""...)
 (defn parse-log-head
    [lst ]
-   (->commit-rec (get-commit-author (nth lst 0))
-                 (get-commit-date (nth lst 1))
-                 (get-commit-revision (nth lst 2))
-                 (get-commit-message (nth lst 3))))
+   (->commit-rec (get-commit-field lst "Author")
+                 (get-commit-field lst "Date")
+                 (get-commit-field lst "Commit")
+                 (get-commit-message lst)))
 
 ;;; "-" "1" ->  0 1
 (defn get-line-count
@@ -203,13 +209,13 @@ Author:Jonathan Jeurissen"
 (defn parse-log-rec
   [lst]
 (->log-rec (parse-log-head lst)
-           (parse-changeset lst)))
+           (parse-changeset (drop (+ 2 (find-index-of "END" lst)) lst))))
   
 ;;; parse output from git log
 (defn parse-git-log
   [project-url]
-  (for [line (get-log-seq project-url)]
-    (parse-log-rec line)))
+  (for [lst (get-log-seq project-url)]
+    (parse-log-rec lst)))
 
 (defn insert-git-log
   [project-url branch]
