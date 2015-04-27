@@ -9,6 +9,7 @@
                  [mysql/mysql-connector-java "5.1.35"]
                  [clj-webdriver "0.6.1"]
                  [org.clojure/data.json "0.2.6"]
+                 [org.clojure/data.xml "0.0.8"]
                  [enlive "1.1.5"]	]
   :main ^:skip-aot codestat.core
   :target-path "target/%s"
