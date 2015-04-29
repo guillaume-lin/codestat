@@ -1,16 +1,18 @@
 (ns codestat.svn)
 (use 'clojure.java.shell)
 
-(def :^dynamic *workspace* "/home/jenkins/workspace")
+(def ^:dynamic *workspace* "/home/jenkins/workspace")
+
+(defn get-base-svn-dir
+  [project-url]
+  (last (clojure.string/split project-url #"/" )))
+
 
 (defn get-full-svn-dir
   "get the full dir of svn"
   [project-url]
   (str *workspace* "/" (get-base-svn-dir project-url)))
 
-(defn get-base-svn-dir
-  [project-url]
-  (last (clojure.string/split project-url #"/" )))
 
 (defn svn-checkout
   "clone the svn project"
@@ -101,7 +103,7 @@
 
 (defn parse-all-commits
   [project-url]
-  (map parse-commit (svn-log project-url))
+  (map parse-commit (svn-log project-url)))
 ;;;
 ;;;  svn diff -c r<v>
 ;;;  ex: svn diff -c r20
@@ -120,16 +122,16 @@ Index: product/mobile/MyRemote_android_2k14/source/MyRemote_android_2k14/Android
 --- product/mobile/MyRemote_android_2k14/source/MyRemote_android_2k14/AndroidManifest.xml       (revision 7577)
 +++ product/mobile/MyRemote_android_2k14/source/MyRemote_android_2k14/AndroidManifest.xml       (revision 7578)
 @@ -2,8 +2,8 @@
- <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-     android:installLocation="auto"
-     package="com.tpv.android.apps.tvremote"
--    android:versionCode="20150215"
--    android:versionName="0.047.7575" >
-+    android:versionCode="20150227"
-+    android:versionName="0.048.7577" >
+ <manifest xmlns:android=\"http://schemas.android.com/apk/res/android\"
+     android:installLocation=\"auto\"
+     package=\"com.tpv.android.apps.tvremote\"
+-    android:versionCode=\"20150215\"
+-    android:versionName=\"0.047.7575\" >
++    android:versionCode=\"20150227\"
++    android:versionName=\"0.048.7577\" >
      <uses-sdk
-         android:minSdkVersion="10"/>
-     <uses-permission android:name="android.permission.INTERNET" />
+         android:minSdkVersion=\"10\"/>
+     <uses-permission android:name=\"android.permission.INTERNET\" />
 "
   )
 (defn collect-add-line
@@ -161,4 +163,4 @@ Index: product/mobile/MyRemote_android_2k14/source/MyRemote_android_2k14/Android
 (defn parse-revision-changeset
   "return seq of change-rec"
   [project-url revision]
-  (parse-diff-record (svn-diff project-url revision))
+  (parse-diff-record (svn-diff project-url revision)))
