@@ -1,5 +1,6 @@
 (ns codestat.svn)
 (use 'clojure.java.shell)
+(require  '[codestat.mysql :as mysql])
 
 (def ^:dynamic *workspace* "/home/jenkins/workspace")
 
@@ -70,6 +71,17 @@
            (let [root (xml/parse-str xml-text)]
              (xml-seq root)))))
 
+
+(defn timestamp-to-milliseconds
+  " convert string like '2014-07-18T02:10:54.370281Z' to seconds since 1970 ..."
+  [string]
+  (+ (* 8 60 60 1000) ;;; add 8 hours to be look like beijing time 
+  (.getTime 
+       (java.sql.Timestamp/valueOf 
+         (clojure.string/replace 
+           (clojure.string/replace string "T" " ") "Z" "")))))
+  
+
 (defn get-author-name
   "input is log entry"
   [logentry]
@@ -77,7 +89,11 @@
 
 (defn get-commit-date
   [logentry]
-  (first (:content (second (:content logentry)))))
+  (timestamp-to-milliseconds 
+    (first 
+      (:content 
+        (second 
+          (:content logentry))))))
 
 (defn get-commit-revision
   [logentry]
@@ -87,16 +103,10 @@
   [logentry]
   (first (:content (last (:content logentry)))))
 
-(defrecord commit-rec
-  [author_name commit_date revision message])
-(defrecord change-rec
-  [add_line delete_line file])
-(defrecord log-rec
-  [commit-rec changeset-rec])
 
 (defn parse-commit
   [logentry]
-  (->commit-rec (get-author-name logentry)
+  (mysql/->commit-rec (get-author-name logentry)
                 (get-commit-date logentry)
                 (get-commit-revision logentry)
                 (get-commit-messge logentry)))
@@ -136,18 +146,18 @@ Index: product/mobile/MyRemote_android_2k14/source/MyRemote_android_2k14/Android
   )
 (defn collect-add-line
   [lines]
-  (count (filter #(.startsWith % "+\t") lines)))
+  (count (filter #(.startsWith % "+   ") lines)))
   
 (defn collect-delete-line
   [lines]
-  (count (filter #(.startsWith % "+\t") lines)))
+  (count (filter #(.startsWith % "-   ") lines)))
 
 (defn parse-svn-changeset
   "return a change-rec"
   [file changes]
-  (->change-rec (collect-add-line changes) 
+  (mysql/->change-rec (collect-add-line changes) 
                 (collect-delete-line changes)
-                (last (clojure.string/split (first file) #"Index: " 2))))
+                (last (clojure.string/split file #"Index: " 2))))
 
 
 (defn is-index?
@@ -157,10 +167,26 @@ Index: product/mobile/MyRemote_android_2k14/source/MyRemote_android_2k14/Android
 (defn parse-diff-record
   "return seq of change-rec"
   [lines]
-  (for [[file changes] (partition-by is-index? lines)]
-    (parse-svn-changeset file changes)))
+  (for [cs  (partition 2 (partition-by is-index? lines))]
+    (let [file (first (first cs)) changes (second cs)]
+      (parse-svn-changeset file changes))))
 
 (defn parse-revision-changeset
   "return seq of change-rec"
   [project-url revision]
   (parse-diff-record (svn-diff project-url revision)))
+
+  
+(defn collect-change-log 
+  "collect change log for svn project"
+  [project-url]
+  (for [cmt (parse-all-commits project-url)]
+    (let [rec (mysql/->log-rec
+                cmt
+                (parse-revision-changeset project-url (:revision cmt)))]
+      rec)))
+
+(defn insert-all-svn-log
+  [project-url ]
+  (doseq [log (collect-change-log project-url)]
+    (mysql/insert-log log project-url "svn")))

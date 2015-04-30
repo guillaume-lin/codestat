@@ -1,6 +1,6 @@
 (ns codestat.git)
 (use 'clojure.java.shell)  ;;; to import sh
-(use 'codestat.mysql) ;;; import insert-log
+(require '[codestat.mysql :as mysql]) ;;; import insert-log
 
 ;;;==========================================
 ;;; data extraction and data translation
@@ -163,19 +163,16 @@ Author:Jonathan Jeurissen"
             is-log? 
             (git-log project-url))))
 
-(defrecord commit-rec
-  [author_name commit_date revision message])
-(defrecord change-rec
-  [add_line delete_line file])
-(defrecord log-rec
-  [commit-rec changeset-rec])
-
+;;;
+(defn commit-date-to-milliseconds
+  [commit-date]
+  (* 1000 (Integer/parseInt commit-date)))
 
 ;;; lst is like: ("Author:..." "Date:..." ....""...)
 (defn parse-log-head
    [lst ]
-   (->commit-rec (get-commit-field lst "Author")
-                 (get-commit-field lst "Date")
+   (mysql/->commit-rec (get-commit-field lst "Author")
+                 (commit-date-to-milliseconds (get-commit-field lst "Date"))
                  (get-commit-field lst "Commit")
                  (get-commit-message lst)))
 
@@ -190,7 +187,7 @@ Author:Jonathan Jeurissen"
   [line]
   (if-let [ret (clojure.string/split line #"\t")]
     (if (= 3 (count ret))
-      (->change-rec (get-line-count (nth ret 0))
+      (mysql/->change-rec (get-line-count (nth ret 0))
                     (get-line-count (nth ret 1))
                     (nth ret 2)))))
 
@@ -208,7 +205,7 @@ Author:Jonathan Jeurissen"
 ;;; get log-rec record
 (defn parse-log-rec
   [lst]
-(->log-rec (parse-log-head lst)
+(mysql/->log-rec (parse-log-head lst)
            (parse-changeset (drop (+ 2 (find-index-of "END" lst)) lst))))
   
 ;;; parse output from git log
@@ -219,7 +216,7 @@ Author:Jonathan Jeurissen"
 
 (defn insert-git-log
   [project-url branch]
-  (doseq [log (parse-git-log project-url)](insert-log log project-url branch)))
+  (doseq [log (parse-git-log project-url)](mysql/insert-log log project-url branch)))
 
 
 ;;; count change line of record

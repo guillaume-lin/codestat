@@ -30,7 +30,7 @@ create table commit(id int primary key auto_increment,
                author_name varchar(40), 
                commit_date timestamp , 
                revision varchar(40) unique, 
-               message varchar(255),
+               message varchar(1024),
                branch varchar(255),
                vcs_url varchar(255));
 
@@ -39,7 +39,7 @@ create table changeset(id int primary key auto_increment,
                           commit_id int,
                           add_line int,
                           delete_line int,
-                          file varchar(255));
+                          file varchar(1024));
 drop table issue;
 create table issue (issue_no int primary key,
                     issue_title varchar(255),
@@ -57,6 +57,13 @@ create table issuelog(id int primary key auto_increment,
 
 )
 
+(defrecord commit-rec
+  [author_name commit_date revision message])
+(defrecord change-rec
+  [add_line delete_line file])
+(defrecord log-rec
+  [commit-rec changeset-rec])
+
 
 (defentity project)
 (defentity author)
@@ -71,7 +78,7 @@ create table issuelog(id int primary key auto_increment,
   ;(println "insert commit: " rec)
   (insert commit 
           (values {:author_name (:author_name rec)
-                   :commit_date (java.sql.Timestamp. (* 1000 (Integer/parseInt (:commit_date rec))))
+                   :commit_date (java.sql.Timestamp. (:commit_date rec))
                    :revision (:revision rec)
                    :message (:message rec)
                    :vcs_url vcs_url
