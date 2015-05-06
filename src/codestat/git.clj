@@ -357,3 +357,10 @@ Author:Jonathan Jeurissen"
   (println "collect done."))
 
 
+(defn rename-author-name
+  "renmae author name of commit"
+  [from to commit]
+  (if (= from (:author_name commit))
+    (assoc commit :author_name to)
+    commit))
+

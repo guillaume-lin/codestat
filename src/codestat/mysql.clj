@@ -32,7 +32,8 @@ create table commit(id int primary key auto_increment,
                revision varchar(40) unique, 
                message varchar(1024),
                branch varchar(255),
-               vcs_url varchar(255));
+               vcs_url varchar(255),
+               ignore_commit bool);
 
 drop table changeset;
 create table changeset(id int primary key auto_increment,
@@ -149,6 +150,14 @@ create table issuelog(id int primary key auto_increment,
 (defn query-changeset
   []
   (select changeset))
+
+
+(defn update-commit-mark-ignore
+  "mark the specified commit to be ignored"
+  [id, bool]
+  (update commit
+          (set-fields {:ignore_commit bool})
+          (where {:id [= id]})))
 
 
 
