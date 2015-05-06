@@ -259,7 +259,7 @@ Author:Jonathan Jeurissen"
        (group-by :author_name 
                  (distinct 
                    (map #(select-keys % [:author_name :vcs_url])
-                        (query-commit))))))
+                        (mysql/query-commit))))))
          
 
 
@@ -273,13 +273,13 @@ Author:Jonathan Jeurissen"
        (group-by :author_name 
                  (distinct 
                    (map #(select-keys % [:author_name :id])
-                        (query-commit))))))
+                        (mysql/query-commit))))))
  
 
 (defn- get-author-by-commit-id
   [commit-id]
   (:author_name (first 
-                  (query-author-by-commit-id commit-id))))
+                  (mysql/query-author-by-commit-id commit-id))))
 
 (defn get-author-change-line-map
   []  
@@ -290,7 +290,7 @@ Author:Jonathan Jeurissen"
                                                       (map (fn[r] (+ (:add_line r) (:delete_line r))) (val e)))))
                       (group-by :commit_id 
                                 (map #(select-keys % [:commit_id :add_line :delete_line])
-                                     (query-changeset)))))))
+                                     (mysql/query-changeset)))))))
 
 ;;; search commit and changeset table for this info
 ;;; return seq of map with keys [:author  :change-line]
