@@ -13,6 +13,7 @@
                  [enlive "1.1.5"]	]
   :main ^:skip-aot codestat.core
   :target-path "target/%s"
-  :plugins [[lein-ring "0.9.3"]]
+  :plugins [[lein-ring "0.9.3"]
+	    [cider/cider-nrepl "0.9.1"]]
   :ring {:handler codestat.web/handler}
   :profiles {:uberjar {:aot :all}})
