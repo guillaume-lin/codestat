@@ -142,16 +142,24 @@
               (partial get-project-records workspace) 
               projects))))
 
-;;; noraml records should have less 10000 line added
-(defn is-valid-record?
-  [record]
-  (if (> (:added-lines record) 3000)
-    false
-    true))
+
 ;;; return date like: 2015-09-18
 (defn get-date
   [record]
   (subs (:date record) 0 10))
+;;; transfer 2015-09-01 to 2015009001
+(defn date2int
+  [date]
+  (Integer/parseInt (clojure.string/replace date #"-" "0")))
+;;;
+;;; noraml records should have less 10000 line added
+;;; and date later than 2015-09-01
+(defn is-valid-record?
+  [record]
+  (if (or (> (:added-lines record) 3000)
+          (< (date2int (get-date record)) (date2int "2015-09-01")))
+    false
+    true))
 
 (defn is-commit-in-date? 
   [date record]
@@ -167,18 +175,26 @@
           0 
           records))
 
+;;; get line increments
+(defn get-increment-lines
+  [records]
+  (reduce #(+ %1 (- (:added-lines %2) (:deleted-lines %2))) 
+          0 
+          records))
+
+
 (defrecord date-lines-record
   [date lines])
 ;;;
 ;;; merge records by date
 ;;;
 (defn merge-records-by-date
-  [records]
+  [records functor]
   (let [dm (group-by get-date (filter (partial is-commit-in-date? "*") 
                                       (filter is-valid-record? records)))]
     (map #(->date-lines-record
              %1 
-             (get-modified-lines (get dm %1))) 
+             (functor (get dm %1))) 
          (keys dm))))
 
 ;;;
@@ -194,12 +210,16 @@
                                 (:lines rs)))))
 
 (defn write-workspace-dlr-to-csv
-  [workspace file]
+  [workspace file functor]
   (write-date-lines-record-to-csv
     (merge-records-by-date
-      (get-workspace-records workspace))
+      (get-workspace-records workspace functor))
     file))
 
+
+(defn write-workspae-increment-dlr-to-csv
+  [workspace file]
+  (write-workspace-dlr-to-csv workspace file get-increment-lines))
 
 
 ;;; project's everyday progress
@@ -211,36 +231,36 @@
   {:project (:project record) :date (get-date record)})
   
 (defn get-project-lines-records
-  [workspace ]
+  [workspace functor]
   (let [dm (group-by get-project-and-date  
             (filter is-valid-record? (get-workspace-records workspace)))]
     (map #(->project-lines-record
            (:project %1)
            (:date %1)
-           (get-modified-lines (get dm %1)))
+           (functor (get dm %1)))
          (keys dm))))
 ;;;
 ;;; project - loc
 ;;;
 (defn write-workspace-plr-to-csv
-  [workspace file]
+  [workspace file functor]
   (with-open [*out* (java.io.FileWriter. file)]
-    (doseq [rs (get-project-lines-records workspace)]
+    (doseq [rs (get-project-lines-records workspace functor)]
       (clojure.pprint/cl-format *out* 
                                 "~s,~s,\"~d\"\r\n" 
                                 (:project rs)
                                 (:date rs)
                                 (:lines rs)))))
 
+(defn write-workspace-modified-lines-to-csv
+  [workspace file ]
+  (write-workspace-plr-to-csv workspace file get-modified-lines))
 
+(defn write-workspace-increment-lines-to-csv
+  [workspace file]
+  (write-workspace-plr-to-csv workspace file get-increment-lines))
 
-
-
-
-
-    
-
-
-
-
+;;;
+;;; count total line of project
+;;;
 
