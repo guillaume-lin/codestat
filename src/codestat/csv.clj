@@ -217,13 +217,13 @@
     file))
 
 
-(defn write-workspae-increment-dlr-to-csv
+(defn write-workspace-increment-dlr-to-csv
   [workspace file]
   (write-workspace-dlr-to-csv workspace file get-increment-lines))
 
 
 ;;; project's everyday progress
-(defrecord project-lines-record
+(defrecord project-date-lines-record
     [project date lines])
 
 (defn get-project-and-date
@@ -234,7 +234,7 @@
   [workspace functor]
   (let [dm (group-by get-project-and-date  
             (filter is-valid-record? (get-workspace-records workspace)))]
-    (map #(->project-lines-record
+    (map #(->project-date-lines-record
            (:project %1)
            (:date %1)
            (functor (get dm %1)))
@@ -263,4 +263,18 @@
 ;;;
 ;;; count total line of project
 ;;;
+
+
+    
+(defn get-date-lines-records-of-project
+  [records project ]
+  "cumulate added-lines deleted-lines"
+  (let [rs-1 (filter #(= project (:project %1))
+                   records)
+        rs-2 (group-by #(get-date %) rs-1)]
+    (map #(->date-lines-record
+           %1
+           (get-increment-lines (get rs-2 %1)))
+         (keys rs-2))))
+
 
