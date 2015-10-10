@@ -266,15 +266,28 @@
 
 
     
-(defn get-date-lines-records-of-project
-  [records project ]
+(defn get-date-lines-records
+  [records ]
   "cumulate added-lines deleted-lines"
-  (let [rs-1 (filter #(= project (:project %1))
-                   records)
-        rs-2 (group-by #(get-date %) rs-1)]
+  (let [rs-2 (group-by #(get-date %) records)]
     (map #(->date-lines-record
            %1
            (get-increment-lines (get rs-2 %1)))
          (keys rs-2))))
 
+(defn write-dlr-to-csv
+  [records file]
+ (with-open [*out* (java.io.FileWriter. file)]
+    (doseq [rs records]
+      (clojure.pprint/cl-format *out* 
+                                "~s,\"~d\"\r\n" 
+                                (:date rs)
+                                (:lines rs)))))
+
+(defn gen-dlr-to-csv
+  [workspace file]
+  (let [rs (get-workspace-records workspace)
+        rs-1 (filter is-valid-record?  rs)
+        rs-2 (get-date-lines-records rs-1)]
+    (write-dlr-to-csv rs-2 file)))
 
